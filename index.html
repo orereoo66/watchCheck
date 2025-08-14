@@ -134,7 +134,29 @@ details.ex.open .meta{ opacity:1 }
 
 
 header.scrolled{ box-shadow: 0 6px 20px rgba(0,0,0,.3) }
+main.wrap.grid{ position:relative; }
+.view{ position:absolute; inset:0; }
+.view.hide{ pointer-events:none; }
 
+:root{ --slide-ms: 360ms; }
+@media (prefers-reduced-motion: reduce){
+  .view{ transition:none!important; transform:none!important; opacity:1!important; }
+}
+
+.view{ 
+  transition: transform var(--slide-ms) cubic-bezier(.22,.8,.18,1), 
+              opacity var(--slide-ms) ease;
+  will-change: transform, opacity;
+  opacity:1; 
+  transform: translateX(0);
+}
+.view.enter-from-right{ transform: translateX(12%); opacity:.01; }
+.view.enter-from-left { transform: translateX(-12%); opacity:.01; }
+.view.exit-to-left    { transform: translateX(-100%); opacity:0; }
+.view.exit-to-right   { transform: translateX(100%); opacity:0; }
+
+main.animating{ overflow:hidden; }
+  
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f1115">
@@ -874,7 +896,91 @@ renderQuiz = function(){
   enhanceDetails();
   microHaptics();
 };
+(function enableSlideTransitions(){
+  const main = document.querySelector('main.wrap.grid');
+  const quiz = document.getElementById('view-quiz');
+  const results = document.getElementById('view-results');
 
+  // 初期クラス設定
+  [quiz, results].forEach(v => v.classList.add('view'));
+  const active = ()=> (location.hash==="#results" ? results : quiz);
+  const inactive = ()=> (location.hash==="#results" ? quiz : results);
+
+  // main の高さをアニメ前後で合わせる（レイアウト安定化）
+  const setMainHeight = (h)=>{ main.style.height = h+"px"; };
+  const clearMainHeight = ()=>{ main.style.height = ""; };
+
+  let lastHash = location.hash;
+
+  async function animateSwap(direction){
+    const from = (lastHash==="#results") ? results : quiz;
+    const to   = (location.hash==="#results") ? results : quiz;
+
+    if(from===to){ // 初回ロードなど
+      // 表示だけ整える
+      quiz.classList.toggle('hide', to!==quiz);
+      results.classList.toggle('hide', to!==results);
+      return;
+    }
+
+    // 高さ固定
+    setMainHeight(from.offsetHeight);
+    main.classList.add('animating');
+
+    // 入り側を初期位置へ
+    to.classList.remove('hide','exit-to-left','exit-to-right','enter-from-left','enter-from-right');
+    to.classList.add(direction==="forward" ? 'enter-from-right' : 'enter-from-left');
+
+    // 表示切替
+    from.classList.remove('hide');
+    to.classList.remove('hide');
+
+    // 次フレームで実アニメ開始
+    await new Promise(r=>requestAnimationFrame(r));
+    const done = Promise.all([
+      waitTransitionEnd(from),
+      waitTransitionEnd(to),
+    ]);
+
+    // 退場方向
+    from.classList.remove('enter-from-left','enter-from-right');
+    from.classList.add(direction==="forward" ? 'exit-to-left' : 'exit-to-right');
+
+    // 入場 → 0 へ
+    to.classList.remove('enter-from-left','enter-from-right');
+
+    await done;
+
+    // 終了後の後片付け
+    from.classList.add('hide');
+    from.classList.remove('exit-to-left','exit-to-right');
+    clearMainHeight();
+    main.classList.remove('animating');
+  }
+
+  function waitTransitionEnd(el){
+    return new Promise(resolve=>{
+      const handler=(e)=>{ if(e.target===el) { el.removeEventListener('transitionend', handler); resolve(); } };
+      el.addEventListener('transitionend', handler);
+      // 念のためタイムアウト（遷移無効環境等）
+      setTimeout(()=>{ el.removeEventListener('transitionend', handler); resolve(); }, 500);
+    });
+  }
+
+  // route を上書きしてスライドさせる
+  const originalRoute = route;
+  route = function(){
+    const goingResults = (lastHash!=="#results" && location.hash==="#results");
+    const goingBack    = (lastHash==="#results" && location.hash!=="#results");
+    originalRoute(); // 既存の描画・数値更新などはそのまま行う
+    animateSwap(goingResults ? "forward" : (goingBack ? "back" : "forward"));
+    lastHash = location.hash;
+  };
+
+  // 初期表示を整える
+  quiz.classList.toggle('hide', active()!==quiz);
+  results.classList.toggle('hide', active()!==results);
+})();
 
 (function start(){
   load();
@@ -887,6 +993,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
