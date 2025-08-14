@@ -143,42 +143,11 @@ details.ex.open .meta{ opacity:1 }
 
 header.scrolled{ box-shadow: 0 6px 20px rgba(0,0,0,.3) }
 /* ====== Slide Transitions (clean, no duplicates) ====== */
+/* ====== View 基本（余計な演出は外す） ====== */
 main.wrap.grid{ position:relative; }
+.view{ display:grid; }          /* 表示中 */
+.view.hidden{ display:none; }   /* 非表示 */
 
-:root{ --slide-ms: 360ms; }
-
-/* ふだんは相対配置（重ならない） */
-.view{
-  position:relative;
-  opacity:1;
-  transform: translateX(0);
-  transition: transform var(--slide-ms) cubic-bezier(.22,.8,.18,1),
-              opacity var(--slide-ms) ease;
-  will-change: transform, opacity;
-}
-
-/* 画面外から入る／出る演出 */
-.view.enter-from-right{ transform: translateX(12%); opacity:.01; }
-.view.enter-from-left { transform: translateX(-12%); opacity:.01; }
-.view.exit-to-left    { transform: translateX(-100%); opacity:0; }
-.view.exit-to-right   { transform: translateX(100%); opacity:0; }
-
-/* 非アクティブ面は完全にオフ */
-.view.hide{ opacity:0; pointer-events:none; display:none; }
-
-/* アニメ中だけ絶対配置で重ねる（←ここが肝） */
-main.animating .view{
-  position:absolute;
-  inset:0;
-  display:block;
-}
-
-/* 省エネ設定のときはアニメ無効 */
-@media (prefers-reduced-motion: reduce){
-  .view{ transition:none!important; transform:none!important; opacity:1!important; }
-}
-
-main.animating{ overflow:hidden; }
   
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -854,42 +823,59 @@ window.addEventListener("hashchange", route);
 const viewQuiz    = document.getElementById("view-quiz");
 const viewResults = document.getElementById("view-results");
 
-// 念のためどちらも grid のまま
+// 安全のため初期状態を固定
+viewQuiz.classList.remove("hidden");
+viewResults.classList.add("hidden");
 viewQuiz.style.display = "grid";
-viewResults.style.display = "grid";
+viewResults.style.display = "none";
 
+// ← この関数で既存の route を完全に置換
 function route(){
   const isResults = (location.hash === "#results");
 
   // 結果ページに来たときだけ描画
   if (isResults) renderResults();
 
-  // 表示の出し分け（片面は完全に非表示）
-  viewQuiz.classList.toggle("hide",  isResults);
-  viewResults.classList.toggle("hide", !isResults);
+  // 片面だけを**確実に**表示（class と style の両建て）
+  if (isResults){
+    viewQuiz.classList.add("hidden");
+    viewResults.classList.remove("hidden");
+    viewQuiz.style.display = "none";
+    viewResults.style.display = "grid";
+  }else{
+    viewResults.classList.add("hidden");
+    viewQuiz.classList.remove("hidden");
+    viewResults.style.display = "none";
+    viewQuiz.style.display = "grid";
+  }
 
-  // ヘッダー固定などの見た目用クラス
+  // 見た目の補助クラス
   document.body.classList.toggle("only-results", isResults);
 
-  // 毎回トップへ（長ページの下に結果が行くのを防ぐ）
-  window.scrollTo({ top: 0, behavior: "auto" });
+  // どんな状況でもトップへ戻す（3段構え）
+  requestAnimationFrame(()=>{
+    window.scrollTo(0,0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  });
 }
 
-// hash 変化で反映
+// イベント
 window.addEventListener("hashchange", route);
 
-// 初期起動
+// 起動
 (function start(){
   load();
   if(!QA[state.episode]) state.episode = getEpisodeList()[0];
   renderQuiz();
   updateProgress();
-  route();  // ← 現在のハッシュに合わせて面を出す
+  route(); // 現在のハッシュに合わせて適用
 })();
 </script>
 
 </body>
 </html>
+
 
 
 
