@@ -145,8 +145,8 @@ header.scrolled{ box-shadow: 0 6px 20px rgba(0,0,0,.3) }
 /* ====== Slide Transitions (clean, no duplicates) ====== */
 /* ====== View 基本（余計な演出は外す） ====== */
 main.wrap.grid{ position:relative; }
-.view{ display:grid; }          /* 表示中 */
-.view.hidden{ display:none; }   /* 非表示 */
+.view{ display:grid; }
+.view[hidden]{ display:none !important; } 
 
   
 </style>
@@ -823,36 +823,29 @@ window.addEventListener("hashchange", route);
 const viewQuiz    = document.getElementById("view-quiz");
 const viewResults = document.getElementById("view-results");
 
-// 安全のため初期状態を固定
-viewQuiz.classList.remove("hidden");
-viewResults.classList.add("hidden");
-viewQuiz.style.display = "grid";
-viewResults.style.display = "none";
+// 初期はクイズ面だけ見せる
+viewQuiz.removeAttribute("hidden");
+viewResults.setAttribute("hidden","");
 
-// ← この関数で既存の route を完全に置換
 function route(){
   const isResults = (location.hash === "#results");
 
   // 結果ページに来たときだけ描画
   if (isResults) renderResults();
 
-  // 片面だけを**確実に**表示（class と style の両建て）
+  // hidden 属性で完全にDOMから外す（高さゼロ・クリック不可）
   if (isResults){
-    viewQuiz.classList.add("hidden");
-    viewResults.classList.remove("hidden");
-    viewQuiz.style.display = "none";
-    viewResults.style.display = "grid";
+    viewQuiz.setAttribute("hidden","");
+    viewResults.removeAttribute("hidden");
   }else{
-    viewResults.classList.add("hidden");
-    viewQuiz.classList.remove("hidden");
-    viewResults.style.display = "none";
-    viewQuiz.style.display = "grid";
+    viewResults.setAttribute("hidden","");
+    viewQuiz.removeAttribute("hidden");
   }
 
   // 見た目の補助クラス
   document.body.classList.toggle("only-results", isResults);
 
-  // どんな状況でもトップへ戻す（3段構え）
+  // スクロールは必ずトップへ戻す
   requestAnimationFrame(()=>{
     window.scrollTo(0,0);
     document.documentElement.scrollTop = 0;
@@ -860,7 +853,6 @@ function route(){
   });
 }
 
-// イベント
 window.addEventListener("hashchange", route);
 
 // 起動
@@ -875,6 +867,7 @@ window.addEventListener("hashchange", route);
 
 </body>
 </html>
+
 
 
 
