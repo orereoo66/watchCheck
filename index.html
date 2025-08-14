@@ -837,56 +837,36 @@ window.addEventListener("hashchange", route);
 const viewQuiz    = document.getElementById("view-quiz");
 const viewResults = document.getElementById("view-results");
 
-
+// 両面とも display は grid のまま（absolute 重ね合わせでスライド）
 viewQuiz.style.display = "grid";
 viewResults.style.display = "grid";
 
 function route(){
   const toResults = (location.hash === "#results");
-
- 
   if (toResults) renderResults();
-
-
   document.body.classList.toggle("only-results", toResults);
-
-
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
-
-
+/* ========= ちょこっと演出 ========= */
 function enhanceDetails(){
   document.querySelectorAll('details.ex').forEach(d=>{
-    const onToggle=()=>{
-      // open直後/直前に .open クラスを付け外し
-      requestAnimationFrame(()=> d.classList.toggle('open', d.open));
-    };
+    const onToggle=()=>{ requestAnimationFrame(()=> d.classList.toggle('open', d.open)); };
     d.addEventListener('toggle', onToggle);
-    // 初期化
     d.classList.toggle('open', d.open);
   });
 }
-
-
 function headerShadowOnScroll(){
   const h=document.querySelector('header');
   const onS=()=> h.classList.toggle('scrolled', window.scrollY>6);
-  window.addEventListener('scroll', onS, {passive:true});
-  onS();
+  window.addEventListener('scroll', onS, {passive:true}); onS();
 }
-
-
 function microHaptics(){
   document.querySelectorAll('.tab,button').forEach(el=>{
-    el.addEventListener('click', ()=> {
-      el.style.transform='scale(.98)';
-      setTimeout(()=> el.style.transform='', 90);
-    });
+    el.addEventListener('click', ()=> { el.style.transform='scale(.98)'; setTimeout(()=> el.style.transform='', 90); });
   });
 }
-
-
+// （ふわっとフェードはそのまま使いたければ有効化）
 function softRouteFade(){
   const fade = (el,show)=>{ el.style.opacity=show?0:1; el.style.transition='opacity 220ms';
     requestAnimationFrame(()=> el.style.opacity=show?1:0); };
@@ -900,26 +880,40 @@ function softRouteFade(){
   }
 }
 
-
+/* ========= render 上書き（描画後に高さ同期も呼ぶ） ========= */
 const _origRenderQuiz = renderQuiz;
 renderQuiz = function(){
   _origRenderQuiz();
   enhanceDetails();
   microHaptics();
+  window.__syncMainHeight && window.__syncMainHeight();   // ★ 追加
 };
+const _origRenderResults = renderResults;
+renderResults = function(){
+  _origRenderResults();
+  window.__syncMainHeight && window.__syncMainHeight();   // ★ 追加
+};
+
+/* ========= スライド式画面遷移（高さ同期つき） ========= */
 (function enableSlideTransitions(){
   const main = document.querySelector('main.wrap.grid');
   const quiz = document.getElementById('view-quiz');
   const results = document.getElementById('view-results');
 
-  // 初期クラス設定
+  // .view を両面に付与（absolute + inset:0 で重ねる）
   [quiz, results].forEach(v => v.classList.add('view'));
-  const active = ()=> (location.hash==="#results" ? results : quiz);
-  const inactive = ()=> (location.hash==="#results" ? quiz : results);
 
-  // main の高さをアニメ前後で合わせる（レイアウト安定化）
-  const setMainHeight = (h)=>{ main.style.height = h+"px"; };
-  const clearMainHeight = ()=>{ main.style.height = ""; };
+  const active = ()=> (location.hash==="#results" ? results : quiz);
+
+  // ★ アクティブ面の実高さを main の min-height に同期
+  function syncMainHeight(){
+    requestAnimationFrame(()=> {
+      const h = active().scrollHeight || active().offsetHeight || 0;
+      main.style.minHeight = h + 'px';
+    });
+  }
+  window.__syncMainHeight = syncMainHeight;
+  window.addEventListener('resize', syncMainHeight);
 
   let lastHash = location.hash;
 
@@ -927,53 +921,45 @@ renderQuiz = function(){
     const from = (lastHash==="#results") ? results : quiz;
     const to   = (location.hash==="#results") ? results : quiz;
 
-    if(from===to){ // 初回ロードなど
-      // 表示だけ整える
+    if(from===to){
+      // 初期表示
       quiz.classList.toggle('hide', to!==quiz);
       results.classList.toggle('hide', to!==results);
+      syncMainHeight();
       return;
     }
-
-    // 高さ固定
-    setMainHeight(from.offsetHeight);
-    main.classList.add('animating');
 
     // 入り側を初期位置へ
     to.classList.remove('hide','exit-to-left','exit-to-right','enter-from-left','enter-from-right');
     to.classList.add(direction==="forward" ? 'enter-from-right' : 'enter-from-left');
 
-    // 表示切替
+    // 表示（重ねておく）
     from.classList.remove('hide');
     to.classList.remove('hide');
 
-    // 次フレームで実アニメ開始
     await new Promise(r=>requestAnimationFrame(r));
-    const done = Promise.all([
-      waitTransitionEnd(from),
-      waitTransitionEnd(to),
-    ]);
 
-    // 退場方向
+    const done = Promise.all([ waitTransitionEnd(from), waitTransitionEnd(to) ]);
+
+    // 退場 / 入場
     from.classList.remove('enter-from-left','enter-from-right');
     from.classList.add(direction==="forward" ? 'exit-to-left' : 'exit-to-right');
-
-    // 入場 → 0 へ
     to.classList.remove('enter-from-left','enter-from-right');
 
     await done;
 
-    // 終了後の後片付け
+    // 終了後 後片付け
     from.classList.add('hide');
     from.classList.remove('exit-to-left','exit-to-right');
-    clearMainHeight();
-    main.classList.remove('animating');
+
+    // ★ 切替後に高さを合わせる
+    syncMainHeight();
   }
 
   function waitTransitionEnd(el){
     return new Promise(resolve=>{
-      const handler=(e)=>{ if(e.target===el) { el.removeEventListener('transitionend', handler); resolve(); } };
+      const handler=(e)=>{ if(e.target===el){ el.removeEventListener('transitionend', handler); resolve(); } };
       el.addEventListener('transitionend', handler);
-      // 念のためタイムアウト（遷移無効環境等）
       setTimeout(()=>{ el.removeEventListener('transitionend', handler); resolve(); }, 500);
     });
   }
@@ -983,16 +969,18 @@ renderQuiz = function(){
   route = function(){
     const goingResults = (lastHash!=="#results" && location.hash==="#results");
     const goingBack    = (lastHash==="#results" && location.hash!=="#results");
-    originalRoute(); // 既存の描画・数値更新などはそのまま行う
+    originalRoute(); // 既存の描画・数値更新など
     animateSwap(goingResults ? "forward" : (goingBack ? "back" : "forward"));
     lastHash = location.hash;
   };
 
-  // 初期表示を整える
+  // 初期表示と高さ同期
   quiz.classList.toggle('hide', active()!==quiz);
   results.classList.toggle('hide', active()!==results);
+  syncMainHeight();
 })();
 
+/* ========= 起動 ========= */
 (function start(){
   load();
   if(!QA[state.episode]) state.episode = getEpisodeList()[0];
@@ -1004,6 +992,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
