@@ -849,169 +849,48 @@ showExplainEl.onchange = ()=>{ state.filters.showExplain = showExplainEl.checked
 onlyUnansweredEl.onchange = ()=>{ state.filters.onlyUnanswered = onlyUnansweredEl.checked; save(); renderQuiz(); };
 window.addEventListener("hashchange", route);
 
-/* ========= ルーティング ========= */
+
+/* ========= ルーティング（安定版：即時切替） ========= */
 const viewQuiz    = document.getElementById("view-quiz");
 const viewResults = document.getElementById("view-results");
-  
 
-// 両面とも display は grid のまま（absolute 重ね合わせでスライド）
+// 念のためどちらも grid のまま
 viewQuiz.style.display = "grid";
 viewResults.style.display = "grid";
 
 function route(){
-  const toResults = (location.hash === "#results");
-  if (toResults) renderResults();
-  document.body.classList.toggle("only-results", toResults);
+  const isResults = (location.hash === "#results");
+
+  // 結果ページに来たときだけ描画
+  if (isResults) renderResults();
+
+  // 表示の出し分け（片面は完全に非表示）
+  viewQuiz.classList.toggle("hide",  isResults);
+  viewResults.classList.toggle("hide", !isResults);
+
+  // ヘッダー固定などの見た目用クラス
+  document.body.classList.toggle("only-results", isResults);
+
+  // 毎回トップへ（長ページの下に結果が行くのを防ぐ）
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
-/* ========= ちょこっと演出 ========= */
-function enhanceDetails(){
-  document.querySelectorAll('details.ex').forEach(d=>{
-    const onToggle=()=>{ requestAnimationFrame(()=> d.classList.toggle('open', d.open)); };
-    d.addEventListener('toggle', onToggle);
-    d.classList.toggle('open', d.open);
-  });
-}
-function headerShadowOnScroll(){
-  const h=document.querySelector('header');
-  const onS=()=> h.classList.toggle('scrolled', window.scrollY>6);
-  window.addEventListener('scroll', onS, {passive:true}); onS();
-}
-function microHaptics(){
-  document.querySelectorAll('.tab,button').forEach(el=>{
-    el.addEventListener('click', ()=> { el.style.transform='scale(.98)'; setTimeout(()=> el.style.transform='', 90); });
-  });
-}
-// （ふわっとフェードはそのまま使いたければ有効化）
-function softRouteFade(){
-  const fade = (el,show)=>{ el.style.opacity=show?0:1; el.style.transition='opacity 220ms';
-    requestAnimationFrame(()=> el.style.opacity=show?1:0); };
-  const origRoute = route;
-  route = function(){
-    const quiz=document.getElementById('view-quiz');
-    const results=document.getElementById('view-results');
-    fade(quiz, location.hash!=="#results");
-    fade(results, location.hash==="#results");
-    origRoute();
-  }
-}
+// hash 変化で反映
+window.addEventListener("hashchange", route);
 
-/* ========= render 上書き（描画後に高さ同期も呼ぶ） ========= */
-const _origRenderQuiz = renderQuiz;
-renderQuiz = function(){
-  _origRenderQuiz();
-  enhanceDetails();
-  microHaptics();
-  window.__syncMainHeight && window.__syncMainHeight();   // ★ 追加
-};
-const _origRenderResults = renderResults;
-renderResults = function(){
-  _origRenderResults();
-  window.__syncMainHeight && window.__syncMainHeight();   // ★ 追加
-};
-
-/* ========= スライド式画面遷移（高さ同期つき） ========= */
-(function enableSlideTransitions(){
-  const main   = document.querySelector('main.wrap.grid');
-  const quiz   = document.getElementById('view-quiz');
-  const results= document.getElementById('view-results');
-
-  // 片面だけを表示（display:none）する素直な出し分け
-  function showActive(){
-    const isResults = (location.hash === "#results");
-    quiz.classList.toggle('hide',  isResults);
-    results.classList.toggle('hide', !isResults);
-  }
-
-  // 遷移アニメ（スライド中のみ absolute で重ねる）
-  async function animateSwap(direction){
-    const toResults = (location.hash === "#results");
-    const from = toResults ? quiz : results;   // 直前の面
-    const to   = toResults ? results : quiz;   // これから出す面
-
-    if (from === to){
-      window.__syncMainHeight && window.__syncMainHeight();
-      return;
-    }
-
-    main.classList.add('animating');   
-    from.classList.remove('hide');
-    to.classList.remove('hide');
-    to.classList.add(direction === "forward" ? "enter-from-right" : "enter-from-left");
-
-    await new Promise(r => requestAnimationFrame(r));
-
-    const done = Promise.all([ waitTransitionEnd(from), waitTransitionEnd(to) ]);
-    from.classList.add(direction === "forward" ? "exit-to-left" : "exit-to-right");
-    to.classList.remove('enter-from-right','enter-from-left');
-
-    await done;
-
-    // 片付け：非表示面は display:none に戻す（ダブルスクロール防止）
-    from.classList.remove('exit-to-left','exit-to-right');
-    showActive();
-
-    main.classList.remove('animating');  // ← 通常レイアウトへ戻す
-    window.__syncMainHeight && window.__syncMainHeight();
-  }
-
-  function waitTransitionEnd(el){
-    return new Promise(resolve=>{
-      const handler=(e)=>{ if(e.target===el){ el.removeEventListener('transitionend', handler); resolve(); } };
-      el.addEventListener('transitionend', handler);
-      setTimeout(()=>{ el.removeEventListener('transitionend', handler); resolve(); }, 500);
-    });
-  }
-
-  // --- ここから追記（IIFEの内側） ---
-  let lastHash = location.hash;
-
-  // 既存の route を拝借して、描画→アニメの順に実行
-  const originalRoute = route;
-  route = function(){
-    const prev = lastHash;
-    const next = location.hash;
-
-    // まず既存の描画（結果数値などを更新）
-    originalRoute();
-
-    // 初回起動やハッシュ不変なら、片面だけ見せて終了
-    if (prev === next){
-      showActive();
-      window.__syncMainHeight && window.__syncMainHeight();
-      return;
-    }
-
-    // スライド方向を決定してアニメーション
-    const direction =
-      (prev !== "#results" && next === "#results") ? "forward" :
-      (prev === "#results" && next !== "#results") ? "back"    :
-      "forward";
-
-    animateSwap(direction);
-    lastHash = next;
-  };
-
-  // 起動直後：現在のハッシュに合わせて片面のみ表示
-  showActive();
-  // --- 追記ここまで ---
-})();
-
- 
-
-/* ========= 起動 ========= */
+// 初期起動
 (function start(){
   load();
   if(!QA[state.episode]) state.episode = getEpisodeList()[0];
-  renderQuiz(); route(); updateProgress();
+  renderQuiz();
+  updateProgress();
+  route();  // ← 現在のハッシュに合わせて面を出す
 })();
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js'));
-}
 </script>
+
 </body>
 </html>
+
 
 
 
