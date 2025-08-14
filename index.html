@@ -154,7 +154,14 @@ main.wrap.grid{ position:relative; }
 .view.enter-from-left { transform: translateX(-12%); opacity:.01; }
 .view.exit-to-left    { transform: translateX(-100%); opacity:0; }
 .view.exit-to-right   { transform: translateX(100%); opacity:0; }
+.view{ position:absolute; inset:0; 
+       transition: transform var(--slide-ms) cubic-bezier(.22,.8,.18,1),
+                   opacity var(--slide-ms) ease;
+       will-change: transform, opacity;
+       opacity:1; transform: translateX(0); }
 
+/* ←これが足りてなかった！ 非アクティブ面は完全に透明＆クリック不可に */
+.view.hide{ opacity:0; pointer-events:none; }
 main.animating{ overflow:hidden; }
   
 </style>
@@ -997,6 +1004,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
