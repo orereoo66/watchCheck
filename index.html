@@ -156,6 +156,7 @@ main.animating .view{
   position:absolute;
   inset:0;
   display:block;
+}
   
 :root{ --slide-ms: 360ms; }
 @media (prefers-reduced-motion: reduce){
@@ -915,43 +916,46 @@ renderResults = function(){
 
 /* ========= スライド式画面遷移（高さ同期つき） ========= */
 (function enableSlideTransitions(){
-  const main = document.querySelector('main.wrap.grid');
-  const quiz = document.getElementById('view-quiz');
-  const results = document.getElementById('view-results');
+  const main   = document.querySelector('main.wrap.grid');
+  const quiz   = document.getElementById('view-quiz');
+  const results= document.getElementById('view-results');
 
-  // 初期表示：片方だけ見せる（display:noneでOK）
+  // 片面だけを表示（display:none）する素直な出し分け
   function showActive(){
-    const isResults = (location.hash==="#results");
+    const isResults = (location.hash === "#results");
     quiz.classList.toggle('hide',  isResults);
     results.classList.toggle('hide', !isResults);
   }
 
+  // 遷移アニメ（スライド中のみ absolute で重ねる）
   async function animateSwap(direction){
-    const from = (location.hash==="#results") ? quiz : results;  // 直前の面
-    const to   = (location.hash==="#results") ? results : quiz;  // これから出す面
+    const toResults = (location.hash === "#results");
+    const from = toResults ? quiz : results;   // 直前の面
+    const to   = toResults ? results : quiz;   // これから出す面
 
-    if(from===to){ showActive(); window.__syncMainHeight && window.__syncMainHeight(); return; }
+    if (from === to){
+      window.__syncMainHeight && window.__syncMainHeight();
+      return;
+    }
 
-    // アニメ前準備
-    main.classList.add('animating');     // ← これでCSSが absolute に切り替わる
+    main.classList.add('animating');   // ← CSS側で .view を absolute に切替
     from.classList.remove('hide');
     to.classList.remove('hide');
-    to.classList.add(direction==="forward" ? 'enter-from-right' : 'enter-from-left');
+    to.classList.add(direction === "forward" ? "enter-from-right" : "enter-from-left");
 
-    await new Promise(r=>requestAnimationFrame(r));
+    await new Promise(r => requestAnimationFrame(r));
 
     const done = Promise.all([ waitTransitionEnd(from), waitTransitionEnd(to) ]);
-
-    from.classList.add(direction==="forward" ? 'exit-to-left' : 'exit-to-right');
+    from.classList.add(direction === "forward" ? "exit-to-left" : "exit-to-right");
     to.classList.remove('enter-from-right','enter-from-left');
 
     await done;
 
-    // 片付け：非アクティブ面は display:none に戻す
+    // 片付け：非表示面は display:none に戻す（ダブルスクロール防止）
     from.classList.remove('exit-to-left','exit-to-right');
     showActive();
 
-    main.classList.remove('animating');  // ← 通常レイアウトに戻す
+    main.classList.remove('animating');  // ← 通常レイアウトへ戻す
     window.__syncMainHeight && window.__syncMainHeight();
   }
 
@@ -963,26 +967,41 @@ renderResults = function(){
     });
   }
 
-  // route 上書き部分の最後で animateSwap を呼んでいるはずなので、そのまま動きます。
-  // 初期表示を安全に
-  showActive();
-})();
+  // --- ここから追記（IIFEの内側） ---
+  let lastHash = location.hash;
 
-  // route を上書きしてスライドさせる
+  // 既存の route を拝借して、描画→アニメの順に実行
   const originalRoute = route;
   route = function(){
-    const goingResults = (lastHash!=="#results" && location.hash==="#results");
-    const goingBack    = (lastHash==="#results" && location.hash!=="#results");
-    originalRoute(); // 既存の描画・数値更新など
-    animateSwap(goingResults ? "forward" : (goingBack ? "back" : "forward"));
-    lastHash = location.hash;
+    const prev = lastHash;
+    const next = location.hash;
+
+    // まず既存の描画（結果数値などを更新）
+    originalRoute();
+
+    // 初回起動やハッシュ不変なら、片面だけ見せて終了
+    if (prev === next){
+      showActive();
+      window.__syncMainHeight && window.__syncMainHeight();
+      return;
+    }
+
+    // スライド方向を決定してアニメーション
+    const direction =
+      (prev !== "#results" && next === "#results") ? "forward" :
+      (prev === "#results" && next !== "#results") ? "back"    :
+      "forward";
+
+    animateSwap(direction);
+    lastHash = next;
   };
 
-  // 初期表示と高さ同期
-  quiz.classList.toggle('hide', active()!==quiz);
-  results.classList.toggle('hide', active()!==results);
-  syncMainHeight();
+  // 起動直後：現在のハッシュに合わせて片面のみ表示
+  showActive();
+  // --- 追記ここまで ---
 })();
+
+ 
 
 /* ========= 起動 ========= */
 (function start(){
@@ -996,6 +1015,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
