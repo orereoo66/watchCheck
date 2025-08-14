@@ -52,7 +52,15 @@
 .tabs{overflow:auto; -webkit-overflow-scrolling:touch}
 .tabs::-webkit-scrollbar{display:none}
 
+/* デフォルトは溢れさせない＝スクロールバーを出さない */
+.tabs{ overflow:visible; }
 
+/* 小画面だけ横スクロール可能に */
+@media (max-width:700px){
+  .tabs{ overflow:auto; -webkit-overflow-scrolling:touch; }
+  .tabs::-webkit-scrollbar{ display:none; }
+}
+  
 :root{
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
@@ -135,9 +143,20 @@ details.ex.open .meta{ opacity:1 }
 
 header.scrolled{ box-shadow: 0 6px 20px rgba(0,0,0,.3) }
 main.wrap.grid{ position:relative; }
-.view{ position:absolute; inset:0; }
-.view.hide{ pointer-events:none; }
-
+.view{
+  position:relative;
+  opacity:1;
+  transform:translateX(0);
+}
+.view.hide{ 
+  display:none;
+}
+  
+main.animating .view{
+  position:absolute;
+  inset:0;
+  display:block;
+  
 :root{ --slide-ms: 360ms; }
 @media (prefers-reduced-motion: reduce){
   .view{ transition:none!important; transform:none!important; opacity:1!important; }
@@ -900,60 +919,40 @@ renderResults = function(){
   const quiz = document.getElementById('view-quiz');
   const results = document.getElementById('view-results');
 
-  // .view を両面に付与（absolute + inset:0 で重ねる）
-  [quiz, results].forEach(v => v.classList.add('view'));
-
-  const active = ()=> (location.hash==="#results" ? results : quiz);
-
-  // ★ アクティブ面の実高さを main の min-height に同期
-  function syncMainHeight(){
-    requestAnimationFrame(()=> {
-      const h = active().scrollHeight || active().offsetHeight || 0;
-      main.style.minHeight = h + 'px';
-    });
+  // 初期表示：片方だけ見せる（display:noneでOK）
+  function showActive(){
+    const isResults = (location.hash==="#results");
+    quiz.classList.toggle('hide',  isResults);
+    results.classList.toggle('hide', !isResults);
   }
-  window.__syncMainHeight = syncMainHeight;
-  window.addEventListener('resize', syncMainHeight);
-
-  let lastHash = location.hash;
 
   async function animateSwap(direction){
-    const from = (lastHash==="#results") ? results : quiz;
-    const to   = (location.hash==="#results") ? results : quiz;
+    const from = (location.hash==="#results") ? quiz : results;  // 直前の面
+    const to   = (location.hash==="#results") ? results : quiz;  // これから出す面
 
-    if(from===to){
-      // 初期表示
-      quiz.classList.toggle('hide', to!==quiz);
-      results.classList.toggle('hide', to!==results);
-      syncMainHeight();
-      return;
-    }
+    if(from===to){ showActive(); window.__syncMainHeight && window.__syncMainHeight(); return; }
 
-    // 入り側を初期位置へ
-    to.classList.remove('hide','exit-to-left','exit-to-right','enter-from-left','enter-from-right');
-    to.classList.add(direction==="forward" ? 'enter-from-right' : 'enter-from-left');
-
-    // 表示（重ねておく）
+    // アニメ前準備
+    main.classList.add('animating');     // ← これでCSSが absolute に切り替わる
     from.classList.remove('hide');
     to.classList.remove('hide');
+    to.classList.add(direction==="forward" ? 'enter-from-right' : 'enter-from-left');
 
     await new Promise(r=>requestAnimationFrame(r));
 
     const done = Promise.all([ waitTransitionEnd(from), waitTransitionEnd(to) ]);
 
-    // 退場 / 入場
-    from.classList.remove('enter-from-left','enter-from-right');
     from.classList.add(direction==="forward" ? 'exit-to-left' : 'exit-to-right');
-    to.classList.remove('enter-from-left','enter-from-right');
+    to.classList.remove('enter-from-right','enter-from-left');
 
     await done;
 
-    // 終了後 後片付け
-    from.classList.add('hide');
+    // 片付け：非アクティブ面は display:none に戻す
     from.classList.remove('exit-to-left','exit-to-right');
+    showActive();
 
-    // ★ 切替後に高さを合わせる
-    syncMainHeight();
+    main.classList.remove('animating');  // ← 通常レイアウトに戻す
+    window.__syncMainHeight && window.__syncMainHeight();
   }
 
   function waitTransitionEnd(el){
@@ -963,6 +962,11 @@ renderResults = function(){
       setTimeout(()=>{ el.removeEventListener('transitionend', handler); resolve(); }, 500);
     });
   }
+
+  // route 上書き部分の最後で animateSwap を呼んでいるはずなので、そのまま動きます。
+  // 初期表示を安全に
+  showActive();
+})();
 
   // route を上書きしてスライドさせる
   const originalRoute = route;
@@ -992,6 +996,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
