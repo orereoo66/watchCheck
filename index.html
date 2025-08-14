@@ -43,7 +43,7 @@
   details.ex summary{cursor:pointer}
   .tagbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   @media print{.no-print{display:none!important} body{background:#fff;color:#000} .panel{border:1px solid #ccc}}
-/* --- ここからスマホ向けの追加CSS --- */
+
 
 /* 小画面で横スクロール可に（テーブル/パネルのはみ出し対策） */
 .panel{overflow-x:auto}
@@ -52,7 +52,7 @@
 .tabs{overflow:auto; -webkit-overflow-scrolling:touch}
 .tabs::-webkit-scrollbar{display:none}
 
-/* iPhoneノッチ対応の安全マージン */
+
 :root{
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
@@ -60,7 +60,7 @@
 header{padding-top:calc(var(--safe-top)/2)}
 main{padding-bottom:calc(12px + var(--safe-bottom))}
 
-/* スマホ最適化（文字・余白・タップしやすさ） */
+
 @media (max-width:480px){
   .wrap{padding:12px}
   .row{gap:8px}
@@ -70,7 +70,70 @@ main{padding-bottom:calc(12px + var(--safe-bottom))}
   table{font-size:13px}
   th,td{padding:8px}
 }
-/* --- ここまで --- */
+
+:root{ --elev: 0 6px 18px rgba(0,0,0,.28); --fast:150ms; --norm:220ms; --slow:420ms }
+@media (prefers-reduced-motion: reduce){
+  *{ animation:none!important; transition:none!important }
+}
+
+
+.panel{ transition: transform var(--norm) ease, box-shadow var(--norm) ease }
+.panel:hover{ transform: translateY(-2px); box-shadow: var(--elev) }
+
+
+.tabs{ position:relative; gap:6px }
+.tab{ position:relative; transition: background var(--fast) ease, transform var(--fast) ease }
+.tab:active{ transform: scale(.98) }
+.tab::after{
+  content:""; position:absolute; left:10px; right:10px; bottom:-6px; height:2px;
+  background:linear-gradient(90deg,#34d399,#22c55e);
+  opacity:0; transform: scaleX(.5); transform-origin:left; transition: all var(--norm) ease
+}
+.tab.active::after{ opacity:1; transform: scaleX(1) }
+
+
+.progress{ overflow:hidden; position:relative }
+.bar{ transition: width var(--slow) cubic-bezier(.22,.8,.18,1) }
+.bar::after{
+  content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  transform:translateX(-100%); animation: sweep 2.2s linear infinite
+}
+@keyframes sweep{ to{ transform:translateX(100%) } }
+
+
+.opt{ transition: border-color var(--fast), background var(--fast) }
+.opt input{ appearance:none; width:20px; height:20px; border:2px solid var(--line); border-radius:6px; margin-top:0; position:relative; flex:0 0 20px; outline:none; transition: all var(--fast) }
+.opt input::after{
+  content:""; position:absolute; inset:2px; border-radius:4px; transform: scale(.2); opacity:0; background:var(--accent);
+  transition: transform var(--fast), opacity var(--fast)
+}
+
+.opt input[type="radio"]{ border-radius:999px }
+.opt input[type="radio"]::after{ border-radius:999px }
+
+.opt input:checked{ border-color:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,.15) }
+.opt input:checked::after{ opacity:1; transform: scale(1) }
+.opt:has(input:checked){ background:#17202b }
+
+
+button, .tab, select, input{ outline:none }
+button:focus-visible, .tab:focus-visible, select:focus-visible, .opt input:focus-visible{
+  box-shadow:0 0 0 3px rgba(59,130,246,.35)
+}
+
+
+.judge{ opacity:.9; transform: translateY(2px); transition: all var(--norm) ease }
+.q:hover .judge{ opacity:1; transform: translateY(0) }
+
+
+details.ex{ overflow:hidden; transition: grid-template-rows var(--slow) ease, padding var(--slow) ease }
+details.ex[open]{ animation: none }
+details.ex .meta{ transition: opacity var(--norm) ease }
+details.ex:not(.open) .meta{ opacity:0 }
+details.ex.open .meta{ opacity:1 }
+
+
+header.scrolled{ box-shadow: 0 6px 20px rgba(0,0,0,.3) }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -758,7 +821,61 @@ function route(){
   }
 }
 
-/* ========= 起動 ========= */
+
+
+function enhanceDetails(){
+  document.querySelectorAll('details.ex').forEach(d=>{
+    const onToggle=()=>{
+      // open直後/直前に .open クラスを付け外し
+      requestAnimationFrame(()=> d.classList.toggle('open', d.open));
+    };
+    d.addEventListener('toggle', onToggle);
+    // 初期化
+    d.classList.toggle('open', d.open);
+  });
+}
+
+
+function headerShadowOnScroll(){
+  const h=document.querySelector('header');
+  const onS=()=> h.classList.toggle('scrolled', window.scrollY>6);
+  window.addEventListener('scroll', onS, {passive:true});
+  onS();
+}
+
+
+function microHaptics(){
+  document.querySelectorAll('.tab,button').forEach(el=>{
+    el.addEventListener('click', ()=> {
+      el.style.transform='scale(.98)';
+      setTimeout(()=> el.style.transform='', 90);
+    });
+  });
+}
+
+
+function softRouteFade(){
+  const fade = (el,show)=>{ el.style.opacity=show?0:1; el.style.transition='opacity 220ms';
+    requestAnimationFrame(()=> el.style.opacity=show?1:0); };
+  const origRoute = route;
+  route = function(){
+    const quiz=document.getElementById('view-quiz');
+    const results=document.getElementById('view-results');
+    fade(quiz, location.hash!=="#results");
+    fade(results, location.hash==="#results");
+    origRoute();
+  }
+}
+
+
+const _origRenderQuiz = renderQuiz;
+renderQuiz = function(){
+  _origRenderQuiz();
+  enhanceDetails();
+  microHaptics();
+};
+
+
 (function start(){
   load();
   if(!QA[state.episode]) state.episode = getEpisodeList()[0];
@@ -770,6 +887,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
