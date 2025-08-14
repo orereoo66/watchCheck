@@ -215,7 +215,7 @@ main.animating{ overflow:hidden; }
 
 <main class="wrap grid" style="margin-top:12px">
   <!-- QUIZ VIEW -->
-  <section id="view-quiz" class="grid">
+  <section id="view-quiz" class="grid view">
     <section class="panel">
       <div class="row" style="align-items:flex-end">
         <div>
@@ -233,7 +233,7 @@ main.animating{ overflow:hidden; }
   </section>
 
   <!-- RESULTS VIEW -->
-  <section id="view-results" class="grid">
+  <section id="view-results" class="grid view">
     <section class="panel">
       <div class="row" style="gap:8px;align-items:center">
         <h2 style="margin:0">結果</h2>
@@ -856,6 +856,7 @@ window.addEventListener("hashchange", route);
 /* ========= ルーティング ========= */
 const viewQuiz    = document.getElementById("view-quiz");
 const viewResults = document.getElementById("view-results");
+  
 
 // 両面とも display は grid のまま（absolute 重ね合わせでスライド）
 viewQuiz.style.display = "grid";
@@ -1015,6 +1016,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
