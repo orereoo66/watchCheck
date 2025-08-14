@@ -142,46 +142,42 @@ details.ex.open .meta{ opacity:1 }
 
 
 header.scrolled{ box-shadow: 0 6px 20px rgba(0,0,0,.3) }
+/* ====== Slide Transitions (clean, no duplicates) ====== */
 main.wrap.grid{ position:relative; }
+
+:root{ --slide-ms: 360ms; }
+
+/* ふだんは相対配置（重ならない） */
 .view{
   position:relative;
   opacity:1;
-  transform:translateX(0);
+  transform: translateX(0);
+  transition: transform var(--slide-ms) cubic-bezier(.22,.8,.18,1),
+              opacity var(--slide-ms) ease;
+  will-change: transform, opacity;
 }
-.view.hide{ 
-  display:none;
-}
-  
+
+/* 画面外から入る／出る演出 */
+.view.enter-from-right{ transform: translateX(12%); opacity:.01; }
+.view.enter-from-left { transform: translateX(-12%); opacity:.01; }
+.view.exit-to-left    { transform: translateX(-100%); opacity:0; }
+.view.exit-to-right   { transform: translateX(100%); opacity:0; }
+
+/* 非アクティブ面は完全にオフ */
+.view.hide{ opacity:0; pointer-events:none; display:none; }
+
+/* アニメ中だけ絶対配置で重ねる（←ここが肝） */
 main.animating .view{
   position:absolute;
   inset:0;
   display:block;
 }
-  
-:root{ --slide-ms: 360ms; }
+
+/* 省エネ設定のときはアニメ無効 */
 @media (prefers-reduced-motion: reduce){
   .view{ transition:none!important; transform:none!important; opacity:1!important; }
 }
 
-.view{ 
-  transition: transform var(--slide-ms) cubic-bezier(.22,.8,.18,1), 
-              opacity var(--slide-ms) ease;
-  will-change: transform, opacity;
-  opacity:1; 
-  transform: translateX(0);
-}
-.view.enter-from-right{ transform: translateX(12%); opacity:.01; }
-.view.enter-from-left { transform: translateX(-12%); opacity:.01; }
-.view.exit-to-left    { transform: translateX(-100%); opacity:0; }
-.view.exit-to-right   { transform: translateX(100%); opacity:0; }
-.view{ position:absolute; inset:0; 
-       transition: transform var(--slide-ms) cubic-bezier(.22,.8,.18,1),
-                   opacity var(--slide-ms) ease;
-       will-change: transform, opacity;
-       opacity:1; transform: translateX(0); }
-
-/* ←これが足りてなかった！ 非アクティブ面は完全に透明＆クリック不可に */
-.view.hide{ opacity:0; pointer-events:none; }
 main.animating{ overflow:hidden; }
   
 </style>
@@ -939,7 +935,7 @@ renderResults = function(){
       return;
     }
 
-    main.classList.add('animating');   // ← CSS側で .view を absolute に切替
+    main.classList.add('animating');   
     from.classList.remove('hide');
     to.classList.remove('hide');
     to.classList.add(direction === "forward" ? "enter-from-right" : "enter-from-left");
@@ -1016,6 +1012,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
