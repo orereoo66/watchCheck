@@ -206,7 +206,7 @@ main.animating{ overflow:hidden; }
   </section>
 
   <!-- RESULTS VIEW -->
-  <section id="view-results" class="grid" style="display:none">
+  <section id="view-results" class="grid">
     <section class="panel">
       <div class="row" style="gap:8px;align-items:center">
         <h2 style="margin:0">結果</h2>
@@ -827,20 +827,24 @@ onlyUnansweredEl.onchange = ()=>{ state.filters.onlyUnanswered = onlyUnansweredE
 window.addEventListener("hashchange", route);
 
 /* ========= ルーティング ========= */
-const viewQuiz=document.getElementById("view-quiz"); const viewResults=document.getElementById("view-results");
+const viewQuiz    = document.getElementById("view-quiz");
+const viewResults = document.getElementById("view-results");
+
+
+viewQuiz.style.display = "grid";
+viewResults.style.display = "grid";
+
 function route(){
-  if(location.hash==="#results"){
-    renderResults();
-    viewQuiz.style.display="none";
-    viewResults.style.display="grid";
-    document.body.classList.add("only-results");
-    window.scrollTo({top:0,behavior:"auto"});
-  }else{
-    viewQuiz.style.display="grid";
-    viewResults.style.display="none";
-    document.body.classList.remove("only-results");
-    window.scrollTo({top:0,behavior:"auto"});
-  }
+  const toResults = (location.hash === "#results");
+
+ 
+  if (toResults) renderResults();
+
+
+  document.body.classList.toggle("only-results", toResults);
+
+
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 
@@ -993,6 +997,7 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
 
 
 
