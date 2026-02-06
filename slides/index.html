@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>新人成果発表会スライド</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #161a22;
+    --ink: #f1f5f9;
+    --muted: #cbd5f5;
+    --accent: #38bdf8;
+    --accent-2: #4ade80;
+    --line: #2a2f3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", system-ui, -apple-system, Segoe UI, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(15, 17, 21, 0.9);
+    border-bottom: 1px solid var(--line);
+    z-index: 10;
+  }
+  header h1 { font-size: 16px; margin: 0; color: var(--muted); }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  button {
+    background: #1f2937;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button.primary { background: linear-gradient(180deg, #1f7a4a, #136a41); border-color: #1c7a4a; }
+  main {
+    min-height: 100vh;
+    padding: 80px 24px 40px;
+  }
+  .deck {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .slide {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 40px;
+    min-height: 70vh;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  }
+  .slide.active { display: block; }
+  .kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 36px;
+    margin: 0 0 16px 0;
+  }
+  h3 { margin: 20px 0 8px; font-size: 22px; }
+  p { margin: 0 0 16px 0; line-height: 1.7; color: var(--muted); }
+  ul { margin: 0; padding-left: 20px; line-height: 1.7; }
+  li { margin-bottom: 8px; }
+  .grid {
+    display: grid;
+    gap: 20px;
+  }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .badge {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    background: #111827;
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  th, td {
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+  }
+  th { color: var(--muted); font-weight: 600; }
+  .highlight { color: var(--accent-2); font-weight: 600; }
+  .footer {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  @media (max-width: 900px) {
+    .grid.two { grid-template-columns: 1fr; }
+    .slide { padding: 28px; }
+    h2 { font-size: 28px; }
+  }
+  @media print {
+    header, .controls { display: none !important; }
+    body { background: #fff; color: #000; }
+    .slide { display: block; page-break-after: always; box-shadow: none; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>新人成果発表会｜配属後半年の振り返り</h1>
+  <div class="controls">
+    <span id="page" class="badge">1 / 12</span>
+    <button id="prev">前へ</button>
+    <button id="next" class="primary">次へ</button>
+  </div>
+</header>
+<main>
+  <div class="deck">
+    <section class="slide active">
+      <div class="kicker">Title</div>
+      <h2>配属後半年の振り返り</h2>
+      <p>インフラギルド IFG-4 影山チーム</p>
+      <p>新人成果発表会</p>
+      <div class="footer">発表者名を入力してください</div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Agenda</div>
+      <h2>本日のアジェンダ</h2>
+      <ul>
+        <li>自己紹介</li>
+        <li>1年間の目標と結果</li>
+        <li>OJTスケジュール</li>
+        <li>プロジェクト振り返り</li>
+        <li>学び・成長</li>
+        <li>今後の目標</li>
+        <li>上司・トレーナーコメント</li>
+      </ul>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Profile</div>
+      <h2>自己紹介</h2>
+      <div class="grid two">
+        <div>
+          <h3>所属</h3>
+          <p>インフラギルド IFG-4 影山チーム</p>
+        </div>
+        <div>
+          <h3>意識してきたこと</h3>
+          <p>まず自分で試し、原因を切り分けてから相談する姿勢を意識。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Goals</div>
+      <h2>1年間の目標と結果</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th>目標</th>
+            <th>結果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>マインド</td>
+            <td>トライアンドエラーを繰り返し経験に還元</td>
+            <td class="highlight">◎</td>
+          </tr>
+          <tr>
+            <td>業務遂行</td>
+            <td>抜け目なく仕事が行える環境を整える</td>
+            <td class="highlight">〇</td>
+          </tr>
+          <tr>
+            <td>専門性</td>
+            <td>会議や書類の内容を正しく理解する</td>
+            <td class="highlight">〇</td>
+          </tr>
+          <tr>
+            <td>資格</td>
+            <td>AWS Certified Solutions Architect Professional 取得</td>
+            <td class="highlight">〇</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">OJT</div>
+      <h2>OJTスケジュール（主軸：RHEL V-up）</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>期間</th>
+            <th>内容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>8〜10月</td>
+            <td>AWS学習・その他研修</td>
+          </tr>
+          <tr>
+            <td>10〜12月</td>
+            <td>生成AIユースケース作成（並行）</td>
+          </tr>
+          <tr>
+            <td>11〜2月</td>
+            <td>RHEL V-up作業（主軸）</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Project</div>
+      <h2>プロジェクト振り返り</h2>
+      <h3>トヨタ自動車 鍵管理プロジェクト</h3>
+      <ul>
+        <li>役割：手順書に沿った作業実施</li>
+        <li>追加対応：資料採集、トラブル対応</li>
+      </ul>
+      <p class="footer">作業手順の理解が早まり、作業時間を短縮できた。</p>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Challenge</div>
+      <h2>苦労したことと解決</h2>
+      <h3>苦労したこと</h3>
+      <p>コマンド単体ではなく「全体の目的」を理解すること。</p>
+      <h3>解決したこと</h3>
+      <ul>
+        <li>なぜ scp を使うのか、なぜ別手段ではないのかを精査</li>
+        <li>なぜ global network ではなくデータストアから取得するのかを整理</li>
+        <li>全体目的から必要な手順を逆算するようにした</li>
+      </ul>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Growth</div>
+      <h2>成長を実感した瞬間</h2>
+      <p>手順書に記載された所要時間が、初回より<strong>約1時間30分短縮</strong>できた時。</p>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Future</div>
+      <h2>今後の目標（短期）</h2>
+      <ul>
+        <li>AWS Certified Solutions Architect Professional を取得</li>
+        <li>クラウド側でも実践経験を積む</li>
+        <li>行動例：週◯時間の学習を継続</li>
+      </ul>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Future</div>
+      <h2>今後の目標（中期）</h2>
+      <p>オンプレもクラウドも分かるハイブリッドな人材になる。</p>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Comments</div>
+      <h2>上司・トレーナーコメント</h2>
+      <p>予定のため省略</p>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">Summary</div>
+      <h2>まとめ</h2>
+      <ul>
+        <li>トライアンドエラーを通じて学びを蓄積</li>
+        <li>作業理解の深化により、時間短縮を実現</li>
+        <li>今後はクラウド領域を強化し、ハイブリッド人材へ</li>
+      </ul>
+      <p class="footer">ご清聴ありがとうございました。</p>
+    </section>
+  </div>
+</main>
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const page = document.getElementById('page');
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+  let index = 0;
+
+  const update = () => {
+    slides.forEach((slide, idx) => slide.classList.toggle('active', idx === index));
+    page.textContent = `${index + 1} / ${slides.length}`;
+  };
+
+  const go = (delta) => {
+    index = (index + delta + slides.length) % slides.length;
+    update();
+  };
+
+  prev.addEventListener('click', () => go(-1));
+  next.addEventListener('click', () => go(1));
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowRight' || event.key === ' ') go(1);
+    if (event.key === 'ArrowLeft') go(-1);
+  });
+
+  update();
+</script>
+</body>
+</html>

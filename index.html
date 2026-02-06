@@ -18,6 +18,8 @@
   .bar{height:100%;background:linear-gradient(90deg,#34d399,#22c55e);width:0%}
   .pill{padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px}
   select,button,input,textarea{background:#141823;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;outline:none}
+  a.btn-link{display:inline-flex;align-items:center;gap:6px;background:#141823;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;text-decoration:none}
+  a.btn-link:hover{background:#1f2937}
   button{cursor:pointer}
   button.primary{background:linear-gradient(180deg,#1f7a4a,#136a41);border-color:#1c7a4a}
   .tabs{display:flex;gap:8px;flex-wrap:wrap}
@@ -171,6 +173,7 @@ main.wrap.grid{ position:relative; }
         <button id="grade" class="primary">採点する（結果ページへ）</button>
         <button id="resetAll">全てリセット</button>
         <button id="exportData">結果をエクスポート</button>
+        <a class="btn-link" href="slides/" target="_blank" rel="noopener">成果発表スライド</a>
         <button id="printPage" class="no-print">印刷 / PDF保存</button>
       </div>
     </div>
